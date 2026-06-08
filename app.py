@@ -146,24 +146,24 @@ def ask_gemini(messages, inp, result):
     if not api_key:
         return "⚠️ GEMINI_API_KEY not set. Go to Streamlit Settings → Secrets and add GEMINI_API_KEY."
 
-    p_default_pct = f"{result['p_default']*100:.1f}"   # ← add these two lines
-    int_x_dti     = f"{inp['int_rate']*inp['dti']:.1f}" # ← here
+    p_default_pct = f"{result['p_default']*100:.1f}"
+    int_x_dti     = f"{inp['int_rate']*inp['dti']:.1f}"
 
-    system = f"""You are an expert credit risk analyst for a Probability of Default model.
-
-Current assessment:
-- Default Probability: {p_default_pct}%  |  Risk Tier: {tier}
-- Interest Rate: {inp['int_rate']}%  |  DTI: {inp['dti']}%
-- Annual Income: ${inp['annual_inc']:,}  |  Grade: {inp['grade']}
-- Employment: {inp['emp_length_int']} yrs  |  Term: {inp['term']}
-- Inquiries 6mo: {inp['inq_last_6mths']}  |  Delinquent Accounts: {inp['acc_now_delinq']}
-- Purpose: {inp['purpose']}  |  Ownership: {inp['home_ownership']}
-- Int x DTI Score: {int_x_dti}
-
-Model: XGBoost trained on full data | AUC ~0.66 | 45 features | SMOTE
-Top predictors: int_rate, annual_inc, int_dti_risk, grade_num
-
-Be concise and practical. Plain language. Max 3 short paragraphs."""
+    system = (
+        "You are an expert credit risk analyst for a Probability of Default model.\n\n"
+        "Current assessment:\n"
+        f"- Default Probability: {p_default_pct}%  |  Risk Tier: {tier}\n"
+        f"- Interest Rate: {inp['int_rate']}%  |  DTI: {inp['dti']}%\n"
+        f"- Annual Income: ${inp['annual_inc']:,}  |  Grade: {inp['grade']}\n"
+        f"- Employment: {inp['emp_length_int']} yrs  |  Term: {inp['term']}\n"
+        f"- Inquiries 6mo: {inp['inq_last_6mths']}  |  Delinquent Accounts: {inp['acc_now_delinq']}\n"
+        f"- Purpose: {inp['purpose']}  |  Ownership: {inp['home_ownership']}\n"
+        f"- Int x DTI Score: {int_x_dti}\n\n"
+        "Model: XGBoost trained on full data | AUC ~0.66 | 45 features | SMOTE\n"
+        "Top predictors: int_rate, annual_inc, int_dti_risk, grade_num\n\n"
+        "Be concise and practical. Plain language. Max 3 short paragraphs. "
+        "Always write complete sentences and never cut off mid-thought."
+    )
 
     try:
         client = genai.Client(api_key=api_key)
@@ -179,49 +179,13 @@ Be concise and practical. Plain language. Max 3 short paragraphs."""
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system,
-                max_output_tokens=600,
+                max_output_tokens=1500,
                 temperature=0.4,
             ),
         )
         return response.text
     except Exception as e:
         return f"⚠️ AI error: {e}\n\nTip: Make sure GEMINI_API_KEY is valid at aistudio.google.com"
-
-    try:
-        client = genai.Client(api_key=api_key)
-        contents = [
-            types.Content(
-                role="user" if m["role"]=="user" else "model",
-                parts=[types.Part(text=m["content"])]
-            )
-            for m in messages
-        ]
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                max_output_tokens=600,
-                temperature=0.4,
-            ),
-        )
-        return response.text
-    except Exception as e:
-        # Fallback to gemini-1.5-flash-latest if flash-lite fails
-        try:
-            client2 = genai.Client(api_key=api_key)
-            response2 = client2.models.generate_content(
-                model="gemini-1.5-flash-latest",
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system,
-                    max_output_tokens=600,
-                    temperature=0.4,
-                ),
-            )
-            return response2.text
-        except Exception as e2:
-            return f"⚠️ AI error: {e2}\n\nTip: Make sure GEMINI_API_KEY is valid at aistudio.google.com"
 
 
 # ── Session state ─────────────────────────────────────────────────────
@@ -248,20 +212,20 @@ with st.sidebar:
         "prime": dict(int_rate=7.5, annual_inc=120000, dti=8.0, emp_length_int=10,
                       inq_last_6mths=0, mths_since_issue_d=60, mths_since_earliest_cr_line=240,
                       acc_now_delinq=0, grade="A",
-                      home_ownership="Own",              # ← was "OWN"
-                      purpose="Credit Card",             # ← was "credit_card"
+                      home_ownership="Own",
+                      purpose="Credit Card",
                       verification_status="Verified", term="36 months"),
         "avg":   dict(int_rate=13.5, annual_inc=65000, dti=18.0, emp_length_int=5,
                       inq_last_6mths=1, mths_since_issue_d=48, mths_since_earliest_cr_line=180,
                       acc_now_delinq=0, grade="C",
-                      home_ownership="Rent",             # ← was "RENT"
-                      purpose="Debt Consolidation",      # ← was "debt_consolidation"
+                      home_ownership="Rent",
+                      purpose="Debt Consolidation",
                       verification_status="Source Verified", term="36 months"),
         "high":  dict(int_rate=24.0, annual_inc=28000, dti=35.0, emp_length_int=1,
                       inq_last_6mths=4, mths_since_issue_d=12, mths_since_earliest_cr_line=60,
                       acc_now_delinq=1, grade="F",
-                      home_ownership="Rent",             # ← was "RENT"
-                      purpose="Small Business",          # ← was "small_business"
+                      home_ownership="Rent",
+                      purpose="Small Business",
                       verification_status="Not Verified", term="60 months"),
     }
 
@@ -274,80 +238,49 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # ── Adaptive numeric field: number_input drives slider ────
-    # number_input is the source of truth; slider reads from it
     def sync_number_to_slider(key):
         st.session_state[f"sl_{key}"] = st.session_state[f"ni_{key}"]
-    
+
     def sync_slider_to_number(key):
         st.session_state[f"ni_{key}"] = st.session_state[f"sl_{key}"]
-    
+
     def num_slider(label, key, min_v, max_v, default, step):
         init_val = float(P.get(key, default))
-    
         if f"ni_{key}" not in st.session_state:
             st.session_state[f"ni_{key}"] = init_val
         if f"sl_{key}" not in st.session_state:
             st.session_state[f"sl_{key}"] = init_val
-    
         col_n, col_s = st.columns([1, 2])
-    
         col_n.number_input(
-            label,
-            min_value=float(min_v),
-            max_value=float(max_v),
-            step=float(step),
-            key=f"ni_{key}",
-            on_change=sync_number_to_slider,
-            args=(key,),
+            label, min_value=float(min_v), max_value=float(max_v),
+            step=float(step), key=f"ni_{key}",
+            on_change=sync_number_to_slider, args=(key,),
             label_visibility="collapsed",
         )
-    
         col_s.slider(
-            label,
-            min_value=float(min_v),
-            max_value=float(max_v),
-            step=float(step),
-            key=f"sl_{key}",
-            on_change=sync_slider_to_number,
-            args=(key,),
+            label, min_value=float(min_v), max_value=float(max_v),
+            step=float(step), key=f"sl_{key}",
+            on_change=sync_slider_to_number, args=(key,),
         )
-    
         return st.session_state[f"ni_{key}"]
 
     def int_slider(label, key, min_v, max_v, default):
         init_val = int(P.get(key, default))
-    
         if f"ni_{key}" not in st.session_state:
             st.session_state[f"ni_{key}"] = init_val
         if f"sl_{key}" not in st.session_state:
             st.session_state[f"sl_{key}"] = init_val
-    
         col_n, col_s = st.columns([1, 2])
-    
         col_n.number_input(
-            label,
-            min_value=min_v,
-            max_value=max_v,
-            step=1,
-            key=f"ni_{key}",
-            on_change=sync_number_to_slider,
-            args=(key,),
+            label, min_value=min_v, max_value=max_v, step=1,
+            key=f"ni_{key}", on_change=sync_number_to_slider, args=(key,),
             label_visibility="collapsed",
         )
-    
         col_s.slider(
-            label,
-            min_value=min_v,
-            max_value=max_v,
-            step=1,
-            key=f"sl_{key}",
-            on_change=sync_slider_to_number,
-            args=(key,),
+            label, min_value=min_v, max_value=max_v, step=1,
+            key=f"sl_{key}", on_change=sync_slider_to_number, args=(key,),
         )
-    
         return int(st.session_state[f"ni_{key}"])
-    
 
     st.markdown("### Loan Details")
     int_rate = num_slider("Interest Rate (%)", "int_rate", 5.0, 30.0, 13.5, 0.1)
@@ -382,10 +315,10 @@ with st.sidebar:
                                key="sel_verif")
 
     st.markdown("### Credit History")
-    inq_6mths  = int_slider("Inquiries (6mo)",         "inq_last_6mths",             0, 10,  1)
-    mths_issue = int_slider("Months Since Issue",       "mths_since_issue_d",         0, 120, 48)
-    mths_cr    = int_slider("Months Since 1st Credit",  "mths_since_earliest_cr_line",0, 1000, 60)
-    acc_delinq = int_slider("Delinquent Accounts",      "acc_now_delinq",             0,  5,  0)
+    inq_6mths  = int_slider("Inquiries (6mo)",        "inq_last_6mths",              0,  10,  1)
+    mths_issue = int_slider("Months Since Issue",      "mths_since_issue_d",          0, 120, 48)
+    mths_cr    = int_slider("Months Since 1st Credit", "mths_since_earliest_cr_line", 0, 1000, 60)
+    acc_delinq = int_slider("Delinquent Accounts",     "acc_now_delinq",              0,   5,  0)
 
     st.markdown("---")
     run_btn = st.button("⚡ Run Assessment", use_container_width=True, type="primary")
@@ -421,8 +354,8 @@ inputs = dict(
     emp_length_int=int(emp_length), inq_last_6mths=int(inq_6mths),
     mths_since_issue_d=int(mths_issue), mths_since_earliest_cr_line=int(mths_cr),
     acc_now_delinq=int(acc_delinq), grade=grade,
-    home_ownership=HOME_MAP[home_own],   # ← map back to raw
-    purpose=PURPOSE_MAP[purpose],         # ← map back to raw
+    home_ownership=HOME_MAP[home_own],
+    purpose=PURPOSE_MAP[purpose],
     verification_status=verif, term=term,
 )
 
@@ -448,28 +381,32 @@ p_def = result["p_default"]
 tier, tc, tb, icon = get_tier(p_def)
 
 # Verdict banner
+p_def_fmt  = f"{p_def*100:.2f}"
+p_nond_fmt = f"{result['p_nond']*100:.2f}"
 st.markdown(f"""
 <div class="rbanner" style="background:{tb};border-color:{tc}33">
     <div style="font-size:2.6rem">{icon}</div>
     <div>
         <div style="font-size:1.8rem;font-weight:800;color:{tc}">{tier}</div>
         <div style="color:#64748b;font-size:0.86rem;margin-top:3px">
-            Default probability: <strong style="color:{tc}">{p_def*100:.2f}%</strong>
+            Default probability: <strong style="color:{tc}">{p_def_fmt}%</strong>
             &nbsp;·&nbsp;
-            Repayment probability: <strong>{result['p_nond']*100:.2f}%</strong>
+            Repayment probability: <strong>{p_nond_fmt}%</strong>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # KPI row
+p_def_kpi    = f"{p_def*100:.1f}%"
+inc_kpi      = f"${inp['annual_inc']/1000:.0f}k"
 kc = st.columns(5)
 for col, val, lbl, color in [
-    (kc[0], f"{p_def*100:.1f}%",             "Default Prob.", tc),
-    (kc[1], inp["grade"],                     "Loan Grade",   "#1a3c6e"),
-    (kc[2], f"{inp['int_rate']}%",            "Interest Rate","#f39c12"),
-    (kc[3], f"{inp['dti']}%",                 "DTI Ratio",    "#2e86ab"),
-    (kc[4], f"${inp['annual_inc']/1000:.0f}k","Annual Income","#27ae60"),
+    (kc[0], p_def_kpi,               "Default Prob.", tc),
+    (kc[1], inp["grade"],             "Loan Grade",   "#1a3c6e"),
+    (kc[2], f"{inp['int_rate']}%",    "Interest Rate","#f39c12"),
+    (kc[3], f"{inp['dti']}%",         "DTI Ratio",    "#2e86ab"),
+    (kc[4], inc_kpi,                  "Annual Income","#27ae60"),
 ]:
     col.markdown(
         f'<div class="mcard" style="border-color:{color}">'
@@ -555,25 +492,30 @@ st.markdown("---")
 st.markdown("## 🤖 AI Credit Risk Analyst")
 st.markdown("*Powered by Gemini — ask anything about the result above.*")
 
+# Quick question buttons — send directly without form
 qc = st.columns(4)
 for i, qp in enumerate(["Explain the key risk drivers",
                           "How to reduce this borrower's risk?",
                           "What does AUC mean here?",
                           "Compare Grade A vs current grade"]):
     if qc[i].button(qp, key=f"qp{i}", use_container_width=True):
-        st.session_state["pending_msg"] = qp
+        st.session_state["chat_history"].append({"role": "user", "content": qp})
+        st.session_state["api_messages"].append({"role": "user", "content": qp})
+        with st.spinner("Thinking..."):
+            reply = ask_gemini(st.session_state["api_messages"], inp, result)
+        st.session_state["chat_history"].append({"role": "assistant", "content": reply})
+        st.session_state["api_messages"].append({"role": "assistant", "content": reply})
+        st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# Manual input form
 with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input(
         "Your question",
-        value=st.session_state.get("pending_msg",""),
         placeholder="e.g. What is the biggest risk factor? How would a lower DTI help?",
     )
     send = st.form_submit_button("Send ➜")
-
-st.session_state.pop("pending_msg", None)
 
 if send and user_input.strip():
     st.session_state["chat_history"].append({"role":"user","content":user_input})
