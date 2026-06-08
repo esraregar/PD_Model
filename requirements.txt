@@ -3,6 +3,6 @@ xgboost
 scikit-learn
 imbalanced-learn
 plotly
-google-generativeai
+google-genai
 pandas
 numpy
