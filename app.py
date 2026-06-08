@@ -324,13 +324,13 @@ with st.sidebar:
                              index=0 if P.get("term","36 months")=="36 months" else 1,
                              key="sel_term")
     purpose  = st.selectbox("Loan Purpose", [
-        "debt_consolidation","credit_card","home_improvement","major_purchase",
-        "small_business","car","medical","moving","vacation","wedding",
-        "educational","house","renewable_energy","other"],
-        index=["debt_consolidation","credit_card","home_improvement","major_purchase",
-               "small_business","car","medical","moving","vacation","wedding",
-               "educational","house","renewable_energy","other"
-               ].index(P.get("purpose","debt_consolidation")),
+        "Debt Consolidation", "Credit Card", "Home Improvement", "Major Purchase",
+        "Small Business", "Car", "Medical", "Moving", "Vacation", "Wedding",
+        "Educational", "House", "Renewable Energy", "Other"],
+        index=["Debt Consolidation", "Credit Card", "Home Improvement", "Major Purchase",
+               "Small Business", "Car", "Medical", "Moving", "Vacation", "Wedding",
+               "Educational", "House", "Renewable Energy", "Other"
+               ].index(P.get("purpose", "Debt Consolidation")),
         key="sel_purpose")
     grade    = st.selectbox("Loan Grade", ["A","B","C","D","E","F","G"],
                              index=["A","B","C","D","E","F","G"].index(P.get("grade","C")),
@@ -341,8 +341,8 @@ with st.sidebar:
                                   int(P.get("annual_inc",65000)), 1000, key="ni_annual_inc")
     dti        = num_slider("Debt-to-Income (%)", "dti", 0.0, 40.0, 18.0, 0.1)
     emp_length = int_slider("Employment (years)", "emp_length_int", 0, 10, 5)
-    home_own   = st.selectbox("Home Ownership", ["RENT","MORTGAGE","OWN"],
-                               index=["RENT","MORTGAGE","OWN"].index(P.get("home_ownership","RENT")),
+    home_own   = st.selectbox("Home Ownership", ["Rent", "Mortgage", "Own"],
+                               index=["Rent", "Mortgage", "Own"].index(P.get("home_ownership", "Rent")),
                                key="sel_home")
     verif      = st.selectbox("Verification Status",
                                ["Source Verified","Verified","Not Verified"],
@@ -353,7 +353,7 @@ with st.sidebar:
     st.markdown("### Credit History")
     inq_6mths  = int_slider("Inquiries (6mo)",         "inq_last_6mths",             0, 10,  1)
     mths_issue = int_slider("Months Since Issue",       "mths_since_issue_d",         0, 120, 48)
-    mths_cr    = int_slider("Months Since 1st Credit",  "mths_since_earliest_cr_line",12, 400, 180)
+    mths_cr    = int_slider("Months Since 1st Credit",  "mths_since_earliest_cr_line",0, 1000, 60)
     acc_delinq = int_slider("Delinquent Accounts",      "acc_now_delinq",             0,  5,  0)
 
     st.markdown("---")
