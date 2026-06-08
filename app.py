@@ -172,7 +172,7 @@ Be concise and practical. Plain language. Max 3 short paragraphs."""
             for m in messages
         ]
         response = client.models.generate_content(
-            model="gemini-2.0-flash-lite",
+            model="gemini-2.5-flash",
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system,
@@ -245,50 +245,78 @@ with st.sidebar:
 
     # ── Adaptive numeric field: number_input drives slider ────
     # number_input is the source of truth; slider reads from it
-    def num_slider(label, key, min_v, max_v, default, step, fmt="%.2f"):
-        """Number input + slider that stay in sync bidirectionally."""
-        default_val = P.get(key, default)
-        # Use session state to persist typed value across reruns
-        sk = f"val_{key}"
-        if sk not in st.session_state or preset_key:
-            st.session_state[sk] = float(default_val) if fmt != "%d" else int(default_val)
-
+    def sync_number_to_slider(key):
+        st.session_state[f"sl_{key}"] = st.session_state[f"ni_{key}"]
+    
+    def sync_slider_to_number(key):
+        st.session_state[f"ni_{key}"] = st.session_state[f"sl_{key}"]
+    
+    def num_slider(label, key, min_v, max_v, default, step):
+        init_val = float(P.get(key, default))
+    
+        if f"ni_{key}" not in st.session_state:
+            st.session_state[f"ni_{key}"] = init_val
+        if f"sl_{key}" not in st.session_state:
+            st.session_state[f"sl_{key}"] = init_val
+    
         col_n, col_s = st.columns([1, 2])
-        # Number input — typing updates state
-        typed = col_n.number_input(
-            label, min_value=float(min_v), max_value=float(max_v),
-            value=float(st.session_state[sk]), step=float(step),
-            format=fmt, key=f"ni_{key}", label_visibility="collapsed")
-        # Update state from typing
-        st.session_state[sk] = typed
-        # Slider reads current state, drag also updates state
-        dragged = col_s.slider(
-            label, min_value=float(min_v), max_value=float(max_v),
-            value=float(st.session_state[sk]), step=float(step),
-            key=f"sl_{key}", label_visibility="visible")
-        # If slider moved, update state
-        if dragged != st.session_state[sk]:
-            st.session_state[sk] = dragged
-        return st.session_state[sk]
+    
+        col_n.number_input(
+            label,
+            min_value=float(min_v),
+            max_value=float(max_v),
+            step=float(step),
+            key=f"ni_{key}",
+            on_change=sync_number_to_slider,
+            args=(key,),
+            label_visibility="collapsed",
+        )
+    
+        col_s.slider(
+            label,
+            min_value=float(min_v),
+            max_value=float(max_v),
+            step=float(step),
+            key=f"sl_{key}",
+            on_change=sync_slider_to_number,
+            args=(key,),
+        )
+    
+        return st.session_state[f"ni_{key}"]
 
     def int_slider(label, key, min_v, max_v, default):
-        default_val = int(P.get(key, default))
-        sk = f"val_{key}"
-        if sk not in st.session_state or preset_key:
-            st.session_state[sk] = default_val
+        init_val = int(P.get(key, default))
+    
+        if f"ni_{key}" not in st.session_state:
+            st.session_state[f"ni_{key}"] = init_val
+        if f"sl_{key}" not in st.session_state:
+            st.session_state[f"sl_{key}"] = init_val
+    
         col_n, col_s = st.columns([1, 2])
-        typed = col_n.number_input(
-            label, min_value=min_v, max_value=max_v,
-            value=int(st.session_state[sk]), step=1,
-            key=f"ni_{key}", label_visibility="collapsed")
-        st.session_state[sk] = typed
-        dragged = col_s.slider(
-            label, min_value=min_v, max_value=max_v,
-            value=int(st.session_state[sk]), step=1,
-            key=f"sl_{key}", label_visibility="visible")
-        if dragged != st.session_state[sk]:
-            st.session_state[sk] = dragged
-        return int(st.session_state[sk])
+    
+        col_n.number_input(
+            label,
+            min_value=min_v,
+            max_value=max_v,
+            step=1,
+            key=f"ni_{key}",
+            on_change=sync_number_to_slider,
+            args=(key,),
+            label_visibility="collapsed",
+        )
+    
+        col_s.slider(
+            label,
+            min_value=min_v,
+            max_value=max_v,
+            step=1,
+            key=f"sl_{key}",
+            on_change=sync_slider_to_number,
+            args=(key,),
+        )
+    
+        return int(st.session_state[f"ni_{key}"])
+    
 
     st.markdown("### Loan Details")
     int_rate = num_slider("Interest Rate (%)", "int_rate", 5.0, 30.0, 13.5, 0.1)
