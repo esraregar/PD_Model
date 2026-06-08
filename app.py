@@ -220,18 +220,24 @@ with st.sidebar:
     highrisk_btn = pc3.button("🔴 High",  use_container_width=True)
 
     PRESETS = {
-        "prime": dict(int_rate=7.5,annual_inc=120000,dti=8.0,emp_length_int=10,
-                      inq_last_6mths=0,mths_since_issue_d=60,mths_since_earliest_cr_line=240,
-                      acc_now_delinq=0,grade="A",home_ownership="OWN",purpose="credit_card",
-                      verification_status="Verified",term="36 months"),
-        "avg":   dict(int_rate=13.5,annual_inc=65000,dti=18.0,emp_length_int=5,
-                      inq_last_6mths=1,mths_since_issue_d=48,mths_since_earliest_cr_line=180,
-                      acc_now_delinq=0,grade="C",home_ownership="RENT",purpose="debt_consolidation",
-                      verification_status="Source Verified",term="36 months"),
-        "high":  dict(int_rate=24.0,annual_inc=28000,dti=35.0,emp_length_int=1,
-                      inq_last_6mths=4,mths_since_issue_d=12,mths_since_earliest_cr_line=60,
-                      acc_now_delinq=1,grade="F",home_ownership="RENT",purpose="small_business",
-                      verification_status="Not Verified",term="60 months"),
+        "prime": dict(int_rate=7.5, annual_inc=120000, dti=8.0, emp_length_int=10,
+                      inq_last_6mths=0, mths_since_issue_d=60, mths_since_earliest_cr_line=240,
+                      acc_now_delinq=0, grade="A",
+                      home_ownership="Own",              # ← was "OWN"
+                      purpose="Credit Card",             # ← was "credit_card"
+                      verification_status="Verified", term="36 months"),
+        "avg":   dict(int_rate=13.5, annual_inc=65000, dti=18.0, emp_length_int=5,
+                      inq_last_6mths=1, mths_since_issue_d=48, mths_since_earliest_cr_line=180,
+                      acc_now_delinq=0, grade="C",
+                      home_ownership="Rent",             # ← was "RENT"
+                      purpose="Debt Consolidation",      # ← was "debt_consolidation"
+                      verification_status="Source Verified", term="36 months"),
+        "high":  dict(int_rate=24.0, annual_inc=28000, dti=35.0, emp_length_int=1,
+                      inq_last_6mths=4, mths_since_issue_d=12, mths_since_earliest_cr_line=60,
+                      acc_now_delinq=1, grade="F",
+                      home_ownership="Rent",             # ← was "RENT"
+                      purpose="Small Business",          # ← was "small_business"
+                      verification_status="Not Verified", term="60 months"),
     }
 
     if prime_btn:    st.session_state["preset"] = "prime"; st.rerun()
