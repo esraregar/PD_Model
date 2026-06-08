@@ -111,10 +111,10 @@ def engineer_single(inp: dict) -> pd.DataFrame:
 
 # ── Helpers ───────────────────────────────────────────────────────────
 def get_tier(p):
-    if p < 0.08:  return "LOW RISK",  "#166534","#dcfce7","🟢"
-    if p < 0.18:  return "MODERATE",  "#92400e","#fef3c7","🟡"
-    if p < 0.30:  return "ELEVATED",  "#9a3412","#ffedd5","🟠"
-    return               "HIGH RISK", "#991b1b","#fee2e2","🔴"
+    if p < 0.07:  return "LOW RISK",  "#166534","#dcfce7","🟢"  # < 0.5× portfolio avg
+    if p < 0.14:  return "MODERATE",  "#92400e","#fef3c7","🟡"  # 0.5×–1× portfolio avg
+    if p < 0.25:  return "ELEVATED",  "#9a3412","#ffedd5","🟠"  # 1×–~1.75× portfolio avg
+    return               "HIGH RISK", "#991b1b","#fee2e2","🔴"  # > ~1.75× portfolio avg
 
 def run_model(inp):
     df    = engineer_single(inp)
@@ -130,8 +130,10 @@ def make_gauge(p):
         gauge={
             "axis":{"range":[0,100],"tickcolor":"#9ca3af","tickfont":{"size":9}},
             "bar":{"color":color,"thickness":0.26}, "bgcolor":"white",
-            "steps":[{"range":[0,8],"color":"#dcfce7"},{"range":[8,18],"color":"#fef3c7"},
-                     {"range":[18,30],"color":"#ffedd5"},{"range":[30,100],"color":"#fee2e2"}],
+            "steps":[{"range":[0,7], "color":"#dcfce7"},
+                     {"range":[7,14], "color":"#fef3c7"},
+                     {"range":[14,25],"color":"#ffedd5"},
+                     {"range":[25,100],"color":"#fee2e2"}],
             "threshold":{"line":{"color":color,"width":3},"value":p*100},
         },
         title={"text":"Default Probability","font":{"size":11,"color":"#6b7280"}},
