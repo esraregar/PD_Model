@@ -21,72 +21,44 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .main { background: #f4f7fb; }
 .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
 
-/* Sidebar background only */
 [data-testid="stSidebar"] { background: #0d1b2a !important; }
-
-/* Sidebar labels and static text — white */
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] .stMarkdown p,
 [data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 { color: white !important; }
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] .stMarkdown h5 { color: white !important; }
 
-/* Sidebar slider value labels */
-[data-testid="stSidebar"] [data-testid="stTickBarMin"],
-[data-testid="stSidebar"] [data-testid="stTickBarMax"],
-[data-testid="stSidebar"] .stSlider p { color: #94a3b8 !important; }
-
-/* ALL input text — black regardless of sidebar or main */
-input[type="number"], input[type="text"] {
-    color: #111827 !important;
-    background-color: white !important;
-}
-
-/* Selectbox selected value text */
-[data-baseweb="select"] [class*="singleValue"],
-[data-baseweb="select"] [class*="placeholder"],
-[data-baseweb="select"] input { color: #111827 !important; }
-
-/* Dropdown options */
+/* Inputs always black text */
+input[type="number"], input[type="text"] { color: #111827 !important; background: white !important; }
+[data-baseweb="select"] [class*="singleValue"] { color: #111827 !important; }
 [data-baseweb="popover"] li,
 [data-baseweb="popover"] [role="option"] { color: #111827 !important; background: white !important; }
+[data-testid="stSidebar"] [data-testid="stTickBarMin"],
+[data-testid="stSidebar"] [data-testid="stTickBarMax"] { color: #94a3b8 !important; }
 
-/* Metric cards */
 .mcard {
     background: white; border-radius: 12px; padding: 14px 16px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-top: 4px solid; text-align: center;
 }
-.mcard .v { font-size: 1.8rem; font-weight: 800; margin-bottom: 1px; }
+.mcard .v { font-size: 1.8rem; font-weight: 800; }
 .mcard .l { font-size: 0.7rem; color: #6b7280; font-weight: 500;
     text-transform: uppercase; letter-spacing: 0.06em; }
-
-/* Risk banner */
 .rbanner {
     border-radius: 14px; padding: 18px 24px; margin-bottom: 16px;
     display: flex; align-items: center; gap: 16px; border: 2px solid;
 }
-
-/* Section header */
-.shdr {
-    font-size: 0.68rem; font-weight: 700; color: #9ca3af;
-    letter-spacing: 0.12em; text-transform: uppercase;
-    margin: 14px 0 7px;
-}
-
-/* Factor chips */
+.shdr { font-size: 0.68rem; font-weight: 700; color: #9ca3af;
+    letter-spacing: 0.12em; text-transform: uppercase; margin: 14px 0 7px; }
 .fchip { border-radius: 8px; padding: 8px 11px; margin-bottom: 6px; font-size: 0.81rem; }
-
-/* Chat */
 .chat-u {
     background: #1a3c6e; color: white;
     border-radius: 14px 14px 4px 14px;
-    padding: 10px 14px; margin: 5px 0 5px 18%;
-    font-size: 0.87rem; line-height: 1.5;
+    padding: 10px 14px; margin: 5px 0 5px 18%; font-size: 0.87rem; line-height: 1.5;
 }
 .chat-a {
     background: white; border: 1px solid #e5e7eb; color: #1a2535;
     border-radius: 14px 14px 14px 4px;
-    padding: 10px 14px; margin: 5px 18% 5px 0;
-    font-size: 0.87rem; line-height: 1.6;
+    padding: 10px 14px; margin: 5px 18% 5px 0; font-size: 0.87rem; line-height: 1.6;
 }
 .stButton>button { border-radius: 9px !important; font-weight: 600 !important; }
 </style>
@@ -102,7 +74,7 @@ def load_model():
 
 model, feature_cols = load_model()
 
-# Exact income-band quintile boundaries from training data
+# Exact income-band boundaries from training qcut
 INCOME_BINS   = [0, 41000, 55000, 70000, 95000, float("inf")]
 INCOME_LABELS = ["Very Low", "Low", "Medium", "High", "Very High"]
 
@@ -111,7 +83,6 @@ INCOME_LABELS = ["Very Low", "Low", "Medium", "High", "Very High"]
 def engineer_single(inp: dict) -> pd.DataFrame:
     df = pd.DataFrame([inp])
     df["acc_now_delinq"] = df["acc_now_delinq"].fillna(0)
-
     grade_map = {"A":1,"B":2,"C":3,"D":4,"E":5,"F":6,"G":7}
     df["grade_num"]           = df["grade"].map(grade_map).fillna(4)
     df["term_months"]         = df["term"].str.extract(r"(\d+)").astype(int)
@@ -125,17 +96,13 @@ def engineer_single(inp: dict) -> pd.DataFrame:
         ["small_business","educational","moving"]).astype(int)
     df["income_band"]         = pd.cut(
         df["annual_inc"], bins=INCOME_BINS, labels=INCOME_LABELS).astype(str)
-
     for col in ["home_ownership","purpose","verification_status","income_band"]:
         dummies = pd.get_dummies(df[col], prefix=col, drop_first=False).astype(int)
         df = pd.concat([df, dummies], axis=1)
-
     df["int_dti_risk"]  = df["int_rate"] * df["dti"]
     df["cr_age_diff"]   = df["mths_since_earliest_cr_line"] - df["mths_since_issue_d"]
     df["inc_dti_ratio"] = df["annual_inc"] / (df["dti"] + 1)
-
-    drop_cols = ["grade","home_ownership","purpose","verification_status",
-                 "term","income_band"]
+    drop_cols = ["grade","home_ownership","purpose","verification_status","term","income_band"]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
     for c in feature_cols:
         if c not in df.columns: df[c] = 0
@@ -152,7 +119,6 @@ def get_tier(p):
 def run_model(inp):
     df    = engineer_single(inp)
     proba = model.predict_proba(df)[0]
-    # proba[0] = P(default=0 i.e. will default), proba[1] = P(non-default)
     return {"p_default": float(proba[0]), "p_nond": float(proba[1])}
 
 def make_gauge(p):
@@ -164,10 +130,8 @@ def make_gauge(p):
         gauge={
             "axis":{"range":[0,100],"tickcolor":"#9ca3af","tickfont":{"size":9}},
             "bar":{"color":color,"thickness":0.26}, "bgcolor":"white",
-            "steps":[{"range":[0,8], "color":"#dcfce7"},
-                     {"range":[8,18],"color":"#fef3c7"},
-                     {"range":[18,30],"color":"#ffedd5"},
-                     {"range":[30,100],"color":"#fee2e2"}],
+            "steps":[{"range":[0,8],"color":"#dcfce7"},{"range":[8,18],"color":"#fef3c7"},
+                     {"range":[18,30],"color":"#ffedd5"},{"range":[30,100],"color":"#fee2e2"}],
             "threshold":{"line":{"color":color,"width":3},"value":p*100},
         },
         title={"text":"Default Probability","font":{"size":11,"color":"#6b7280"}},
@@ -180,8 +144,7 @@ def ask_gemini(messages, inp, result):
     tier, *_ = get_tier(result["p_default"])
     api_key  = st.secrets.get("GEMINI_API_KEY","")
     if not api_key:
-        return ("⚠️ GEMINI_API_KEY not set. "
-                "Go to Streamlit Settings → Secrets and add GEMINI_API_KEY.")
+        return "⚠️ GEMINI_API_KEY not set. Go to Streamlit Settings → Secrets and add GEMINI_API_KEY."
 
     system = f"""You are an expert credit risk analyst for a Probability of Default model.
 
@@ -192,53 +155,64 @@ Current assessment:
 - Employment: {inp['emp_length_int']} yrs  |  Term: {inp['term']}
 - Inquiries 6mo: {inp['inq_last_6mths']}  |  Delinquent Accounts: {inp['acc_now_delinq']}
 - Purpose: {inp['purpose']}  |  Ownership: {inp['home_ownership']}
-- Int×DTI Score: {inp['int_rate']*inp['dti']:.1f}
+- Int x DTI Score: {inp['int_rate']*inp['dti']:.1f}
 
-Model: XGBoost | AUC 0.6647 | Accuracy 85.5% | 45 features | SMOTE
+Model: XGBoost trained on full data | AUC ~0.66 | 45 features | SMOTE
 Top predictors: int_rate, annual_inc, int_dti_risk, grade_num
 
 Be concise and practical. Plain language. Max 3 short paragraphs."""
 
-    client = genai.Client(api_key=api_key)
-
-    # Build contents list from history
-    contents = []
-    for m in messages:
-        contents.append(
+    try:
+        client = genai.Client(api_key=api_key)
+        contents = [
             types.Content(
                 role="user" if m["role"]=="user" else "model",
                 parts=[types.Part(text=m["content"])]
             )
+            for m in messages
+        ]
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=600,
+                temperature=0.4,
+            ),
         )
-
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system,
-            max_output_tokens=600,
-            temperature=0.4,
-        ),
-    )
-    return response.text
+        return response.text
+    except Exception as e:
+        # Fallback to gemini-1.5-flash-latest if flash-lite fails
+        try:
+            client2 = genai.Client(api_key=api_key)
+            response2 = client2.models.generate_content(
+                model="gemini-1.5-flash-latest",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    max_output_tokens=600,
+                    temperature=0.4,
+                ),
+            )
+            return response2.text
+        except Exception as e2:
+            return f"⚠️ AI error: {e2}\n\nTip: Make sure GEMINI_API_KEY is valid at aistudio.google.com"
 
 
 # ── Session state ─────────────────────────────────────────────────────
 for k, v in [("result",None),("assessed_inputs",{}),
-              ("chat_history",[]),("api_messages",[]),("pending_msg","")]:
-    if k not in st.session_state:
-        st.session_state[k] = v
+              ("chat_history",[]),("api_messages",[])]:
+    if k not in st.session_state: st.session_state[k] = v
 
 
 # ════════════════════════════════════════════════════════════════
-# SIDEBAR — all inputs adaptive (slider + number_input synced)
+# SIDEBAR
 # ════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("## 🏦 PD Model")
     st.markdown("*Loan Risk Assessor*")
     st.markdown("---")
 
-    # ── Presets first so they can pre-fill values ──────────────
     st.markdown("##### Quick Presets")
     pc1, pc2, pc3 = st.columns(3)
     prime_btn    = pc1.button("🟢 Prime", use_container_width=True)
@@ -264,77 +238,100 @@ with st.sidebar:
     if avg_btn:      st.session_state["preset"] = "avg";   st.rerun()
     if highrisk_btn: st.session_state["preset"] = "high";  st.rerun()
 
-    # Get preset defaults if any
     preset_key = st.session_state.get("preset")
     P = PRESETS.get(preset_key, {})
 
     st.markdown("---")
-    st.markdown("### Loan Details")
 
-    # Each float field: number_input is the source of truth; slider follows it
-    # This makes typing update the slider automatically
-    def float_field(label, key, min_v, max_v, default, step=0.1):
-        default_val = float(P.get(key, default))
+    # ── Adaptive numeric field: number_input drives slider ────
+    # number_input is the source of truth; slider reads from it
+    def num_slider(label, key, min_v, max_v, default, step, fmt="%.2f"):
+        """Number input + slider that stay in sync bidirectionally."""
+        default_val = P.get(key, default)
+        # Use session state to persist typed value across reruns
+        sk = f"val_{key}"
+        if sk not in st.session_state or preset_key:
+            st.session_state[sk] = float(default_val) if fmt != "%d" else int(default_val)
+
         col_n, col_s = st.columns([1, 2])
+        # Number input — typing updates state
         typed = col_n.number_input(
-            label, min_value=min_v, max_value=max_v,
-            value=default_val, step=step,
-            format="%.2f", key=f"n_{key}", label_visibility="collapsed")
-        col_s.slider(
-            label, min_value=min_v, max_value=max_v,
-            value=float(typed), step=step,
-            key=f"s_{key}", label_visibility="visible")
-        return typed
+            label, min_value=float(min_v), max_value=float(max_v),
+            value=float(st.session_state[sk]), step=float(step),
+            format=fmt, key=f"ni_{key}", label_visibility="collapsed")
+        # Update state from typing
+        st.session_state[sk] = typed
+        # Slider reads current state, drag also updates state
+        dragged = col_s.slider(
+            label, min_value=float(min_v), max_value=float(max_v),
+            value=float(st.session_state[sk]), step=float(step),
+            key=f"sl_{key}", label_visibility="visible")
+        # If slider moved, update state
+        if dragged != st.session_state[sk]:
+            st.session_state[sk] = dragged
+        return st.session_state[sk]
 
-    def int_field(label, key, min_v, max_v, default):
+    def int_slider(label, key, min_v, max_v, default):
         default_val = int(P.get(key, default))
+        sk = f"val_{key}"
+        if sk not in st.session_state or preset_key:
+            st.session_state[sk] = default_val
         col_n, col_s = st.columns([1, 2])
         typed = col_n.number_input(
             label, min_value=min_v, max_value=max_v,
-            value=default_val, step=1,
-            key=f"n_{key}", label_visibility="collapsed")
-        col_s.slider(
+            value=int(st.session_state[sk]), step=1,
+            key=f"ni_{key}", label_visibility="collapsed")
+        st.session_state[sk] = typed
+        dragged = col_s.slider(
             label, min_value=min_v, max_value=max_v,
-            value=int(typed), step=1,
-            key=f"s_{key}", label_visibility="visible")
-        return int(typed)
+            value=int(st.session_state[sk]), step=1,
+            key=f"sl_{key}", label_visibility="visible")
+        if dragged != st.session_state[sk]:
+            st.session_state[sk] = dragged
+        return int(st.session_state[sk])
 
-    int_rate   = float_field("Interest Rate (%)", "int_rate", 5.0, 30.0, 13.5)
-    term       = st.selectbox("Loan Term",   ["36 months","60 months"],
-                               index=0 if P.get("term","36 months")=="36 months" else 1)
-    purpose    = st.selectbox("Loan Purpose", [
+    st.markdown("### Loan Details")
+    int_rate = num_slider("Interest Rate (%)", "int_rate", 5.0, 30.0, 13.5, 0.1)
+    term     = st.selectbox("Loan Term", ["36 months","60 months"],
+                             index=0 if P.get("term","36 months")=="36 months" else 1,
+                             key="sel_term")
+    purpose  = st.selectbox("Loan Purpose", [
         "debt_consolidation","credit_card","home_improvement","major_purchase",
         "small_business","car","medical","moving","vacation","wedding",
         "educational","house","renewable_energy","other"],
         index=["debt_consolidation","credit_card","home_improvement","major_purchase",
                "small_business","car","medical","moving","vacation","wedding",
                "educational","house","renewable_energy","other"
-               ].index(P.get("purpose","debt_consolidation")))
-    grade      = st.selectbox("Loan Grade", ["A","B","C","D","E","F","G"],
-                               index=["A","B","C","D","E","F","G"].index(P.get("grade","C")))
+               ].index(P.get("purpose","debt_consolidation")),
+        key="sel_purpose")
+    grade    = st.selectbox("Loan Grade", ["A","B","C","D","E","F","G"],
+                             index=["A","B","C","D","E","F","G"].index(P.get("grade","C")),
+                             key="sel_grade")
 
     st.markdown("### Borrower Profile")
     annual_inc = st.number_input("Annual Income ($)", 10000, 9999999,
-                                  int(P.get("annual_inc", 65000)), 1000)
-    dti        = float_field("Debt-to-Income (%)", "dti", 0.0, 40.0, 18.0)
-    emp_length = int_field("Employment (years)", "emp_length_int", 0, 10, 5)
+                                  int(P.get("annual_inc",65000)), 1000, key="ni_annual_inc")
+    dti        = num_slider("Debt-to-Income (%)", "dti", 0.0, 40.0, 18.0, 0.1)
+    emp_length = int_slider("Employment (years)", "emp_length_int", 0, 10, 5)
     home_own   = st.selectbox("Home Ownership", ["RENT","MORTGAGE","OWN"],
-                               index=["RENT","MORTGAGE","OWN"].index(P.get("home_ownership","RENT")))
+                               index=["RENT","MORTGAGE","OWN"].index(P.get("home_ownership","RENT")),
+                               key="sel_home")
     verif      = st.selectbox("Verification Status",
                                ["Source Verified","Verified","Not Verified"],
                                index=["Source Verified","Verified","Not Verified"
-                                      ].index(P.get("verification_status","Source Verified")))
+                                      ].index(P.get("verification_status","Source Verified")),
+                               key="sel_verif")
 
     st.markdown("### Credit History")
-    inq_6mths  = int_field("Inquiries (6mo)",          "inq_last_6mths",      0, 10,  1)
-    mths_issue = int_field("Months Since Issue",        "mths_since_issue_d",  0, 120, 48)
-    mths_cr    = int_field("Months Since 1st Credit",   "mths_since_earliest_cr_line", 12, 400, 180)
-    acc_delinq = int_field("Delinquent Accounts",       "acc_now_delinq",      0,  5,  0)
+    inq_6mths  = int_slider("Inquiries (6mo)",         "inq_last_6mths",             0, 10,  1)
+    mths_issue = int_slider("Months Since Issue",       "mths_since_issue_d",         0, 120, 48)
+    mths_cr    = int_slider("Months Since 1st Credit",  "mths_since_earliest_cr_line",12, 400, 180)
+    acc_delinq = int_slider("Delinquent Accounts",      "acc_now_delinq",             0,  5,  0)
 
     st.markdown("---")
     run_btn = st.button("⚡ Run Assessment", use_container_width=True, type="primary")
 
-# Clear preset after rendering
+# Clear preset after render
 if preset_key:
     st.session_state.pop("preset", None)
 
@@ -355,7 +352,7 @@ if run_btn:
 # MAIN
 # ════════════════════════════════════════════════════════════════
 st.markdown("# 🏦 Probability of Default — Loan Risk Assessor")
-st.markdown("*XGBoost · AUC 0.6647 · 45 Features · SMOTE · Gemini AI*")
+st.markdown("*XGBoost · 45 Features · SMOTE · Gemini AI*")
 
 result = st.session_state["result"]
 inp    = st.session_state["assessed_inputs"] if st.session_state["assessed_inputs"] else inputs
@@ -367,7 +364,7 @@ if result is None:
 p_def = result["p_default"]
 tier, tc, tb, icon = get_tier(p_def)
 
-# ── Verdict banner ────────────────────────────────────────────
+# Verdict banner
 st.markdown(f"""
 <div class="rbanner" style="background:{tb};border-color:{tc}33">
     <div style="font-size:2.6rem">{icon}</div>
@@ -382,7 +379,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── KPI row ───────────────────────────────────────────────────
+# KPI row
 kc = st.columns(5)
 for col, val, lbl, color in [
     (kc[0], f"{p_def*100:.1f}%",             "Default Prob.", tc),
@@ -394,14 +391,12 @@ for col, val, lbl, color in [
     col.markdown(
         f'<div class="mcard" style="border-color:{color}">'
         f'<div class="v" style="color:{color}">{val}</div>'
-        f'<div class="l">{lbl}</div></div>',
-        unsafe_allow_html=True)
+        f'<div class="l">{lbl}</div></div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Gauge + Factors ───────────────────────────────────────────
+# Gauge + Factors
 col_g, col_f = st.columns([1, 1.6])
-
 with col_g:
     st.plotly_chart(make_gauge(p_def), use_container_width=True)
     st.markdown('<div class="shdr">Engineered Features</div>', unsafe_allow_html=True)
@@ -414,11 +409,9 @@ with col_g:
 
 with col_f:
     st.markdown('<div class="shdr">Risk Factor Analysis</div>', unsafe_allow_html=True)
-    CHIP = {
-        "high":    ("#fee2e2","#991b1b","#dc2626"),
-        "low":     ("#dcfce7","#166534","#16a34a"),
-        "neutral": ("#f3f4f6","#374151","#9ca3af"),
-    }
+    CHIP = {"high":("#fee2e2","#991b1b","#dc2626"),
+            "low": ("#dcfce7","#166534","#16a34a"),
+            "neutral":("#f3f4f6","#374151","#9ca3af")}
     for fname, fval, ftype, fdesc in [
         ("Interest Rate",  f"{inp['int_rate']}%",
          "high" if inp['int_rate']>18 else "low" if inp['int_rate']<10 else "neutral",
@@ -458,15 +451,15 @@ with col_f:
           <div style="font-size:0.76rem;color:{tc2};opacity:0.8;margin-top:2px">{fdesc}</div>
         </div>""", unsafe_allow_html=True)
 
-# ── Loan summary chips ────────────────────────────────────────
+# Summary chips
 st.markdown('<div class="shdr">Loan Summary</div>', unsafe_allow_html=True)
-chips = [f"Grade: {inp['grade']}", f"Rate: {inp['int_rate']}%",
-         f"DTI: {inp['dti']}%", f"Term: {inp['term']}",
-         f"Purpose: {inp['purpose'].replace('_',' ')}",
-         f"Ownership: {inp['home_ownership']}"]
 st.markdown(" &nbsp; ".join(
     f'<span style="background:#f1f5f9;padding:3px 9px;border-radius:6px;'
-    f'font-size:0.78rem;color:#475569">{c}</span>' for c in chips),
+    f'font-size:0.78rem;color:#475569">{c}</span>'
+    for c in [f"Grade: {inp['grade']}", f"Rate: {inp['int_rate']}%",
+              f"DTI: {inp['dti']}%", f"Term: {inp['term']}",
+              f"Purpose: {inp['purpose'].replace('_',' ')}",
+              f"Ownership: {inp['home_ownership']}"]),
     unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -477,51 +470,46 @@ st.markdown("---")
 # AI ANALYST
 # ════════════════════════════════════════════════════════════════
 st.markdown("## 🤖 AI Credit Risk Analyst")
-st.markdown("*Powered by Gemini 2.0 Flash — ask anything about the result above.*")
+st.markdown("*Powered by Gemini — ask anything about the result above.*")
 
-# Quick prompts
 qc = st.columns(4)
-for i, qp in enumerate([
-    "Explain the key risk drivers",
-    "How to reduce this borrower's risk?",
-    "What does AUC 0.6647 mean?",
-    "Compare Grade A vs current grade",
-]):
+for i, qp in enumerate(["Explain the key risk drivers",
+                          "How to reduce this borrower's risk?",
+                          "What does AUC mean here?",
+                          "Compare Grade A vs current grade"]):
     if qc[i].button(qp, key=f"qp{i}", use_container_width=True):
         st.session_state["pending_msg"] = qp
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Input form
 with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input(
         "Your question",
         value=st.session_state.get("pending_msg",""),
-        placeholder="e.g. What's the biggest risk factor? How would a lower DTI help?",
+        placeholder="e.g. What is the biggest risk factor? How would a lower DTI help?",
     )
     send = st.form_submit_button("Send ➜")
 
 st.session_state.pop("pending_msg", None)
 
 if send and user_input.strip():
-    st.session_state["chat_history"].append({"role":"user",      "content":user_input})
-    st.session_state["api_messages"].append({"role":"user",      "content":user_input})
+    st.session_state["chat_history"].append({"role":"user","content":user_input})
+    st.session_state["api_messages"].append({"role":"user","content":user_input})
     with st.spinner("Thinking..."):
         reply = ask_gemini(st.session_state["api_messages"], inp, result)
-    st.session_state["chat_history"].append({"role":"assistant", "content":reply})
-    st.session_state["api_messages"].append({"role":"assistant", "content":reply})
+    st.session_state["chat_history"].append({"role":"assistant","content":reply})
+    st.session_state["api_messages"].append({"role":"assistant","content":reply})
     st.rerun()
 
-# Conversation — most recent first so answer is always visible
+# Show conversation newest first
 if st.session_state["chat_history"]:
     st.markdown("---")
     st.markdown("**Conversation** *(newest first)*")
     for msg in reversed(st.session_state["chat_history"]):
         css = "chat-u" if msg["role"]=="user" else "chat-a"
         pfx = "👤" if msg["role"]=="user" else "🤖"
-        st.markdown(
-            f'<div class="{css}">{pfx} {msg["content"]}</div>',
-            unsafe_allow_html=True)
+        st.markdown(f'<div class="{css}">{pfx} {msg["content"]}</div>',
+                    unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🗑️ Clear chat"):
         st.session_state["chat_history"] = []
