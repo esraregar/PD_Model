@@ -142,11 +142,33 @@ def make_gauge(p):
 
 def ask_gemini(messages, inp, result):
     tier, *_ = get_tier(result["p_default"])
-    api_key  = st.secrets.get("GEMINI_API_KEY","")
+    api_key  = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
         return "⚠️ GEMINI_API_KEY not set. Go to Streamlit Settings → Secrets and add GEMINI_API_KEY."
 
-    system = f"""You are an expert credit risk analyst for a Probability of Default model.
+    system = f"""..."""  # keep as-is
+
+    try:
+        client = genai.Client(api_key=api_key)
+        contents = [
+            types.Content(
+                role="user" if m["role"] == "user" else "model",
+                parts=[types.Part(text=m["content"])]
+            )
+            for m in messages
+        ]
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=600,
+                temperature=0.4,
+            ),
+        )
+        return response.text
+    except Exception as e:
+        return f"⚠️ AI error: {e}\n\nTip: Make sure GEMINI_API_KEY is valid at aistudio.google.com"
 
 Current assessment:
 - Default Probability: {result['p_default']*100:.1f}%  |  Risk Tier: {tier}
