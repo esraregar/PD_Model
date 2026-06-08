@@ -142,11 +142,28 @@ def make_gauge(p):
 
 def ask_gemini(messages, inp, result):
     tier, *_ = get_tier(result["p_default"])
-    api_key  = st.secrets.get("GEMINI_API_KEY", "")
+    api_key  = st.secrets.get("GEMINI_API_KEY","")
     if not api_key:
         return "⚠️ GEMINI_API_KEY not set. Go to Streamlit Settings → Secrets and add GEMINI_API_KEY."
 
-    system = f"""..."""  # keep as-is
+    p_default_pct = f"{result['p_default']*100:.1f}"   # ← add these two lines
+    int_x_dti     = f"{inp['int_rate']*inp['dti']:.1f}" # ← here
+
+    system = f"""You are an expert credit risk analyst for a Probability of Default model.
+
+Current assessment:
+- Default Probability: {p_default_pct}%  |  Risk Tier: {tier}
+- Interest Rate: {inp['int_rate']}%  |  DTI: {inp['dti']}%
+- Annual Income: ${inp['annual_inc']:,}  |  Grade: {inp['grade']}
+- Employment: {inp['emp_length_int']} yrs  |  Term: {inp['term']}
+- Inquiries 6mo: {inp['inq_last_6mths']}  |  Delinquent Accounts: {inp['acc_now_delinq']}
+- Purpose: {inp['purpose']}  |  Ownership: {inp['home_ownership']}
+- Int x DTI Score: {int_x_dti}
+
+Model: XGBoost trained on full data | AUC ~0.66 | 45 features | SMOTE
+Top predictors: int_rate, annual_inc, int_dti_risk, grade_num
+
+Be concise and practical. Plain language. Max 3 short paragraphs."""
 
     try:
         client = genai.Client(api_key=api_key)
