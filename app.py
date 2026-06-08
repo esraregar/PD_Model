@@ -187,20 +187,6 @@ Be concise and practical. Plain language. Max 3 short paragraphs."""
     except Exception as e:
         return f"⚠️ AI error: {e}\n\nTip: Make sure GEMINI_API_KEY is valid at aistudio.google.com"
 
-Current assessment:
-- Default Probability: {result['p_default']*100:.1f}%  |  Risk Tier: {tier}
-- Interest Rate: {inp['int_rate']}%  |  DTI: {inp['dti']}%
-- Annual Income: ${inp['annual_inc']:,}  |  Grade: {inp['grade']}
-- Employment: {inp['emp_length_int']} yrs  |  Term: {inp['term']}
-- Inquiries 6mo: {inp['inq_last_6mths']}  |  Delinquent Accounts: {inp['acc_now_delinq']}
-- Purpose: {inp['purpose']}  |  Ownership: {inp['home_ownership']}
-- Int x DTI Score: {inp['int_rate']*inp['dti']:.1f}
-
-Model: XGBoost trained on full data | AUC ~0.66 | 45 features | SMOTE
-Top predictors: int_rate, annual_inc, int_dti_risk, grade_num
-
-Be concise and practical. Plain language. Max 3 short paragraphs."""
-
     try:
         client = genai.Client(api_key=api_key)
         contents = [
