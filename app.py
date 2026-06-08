@@ -363,12 +363,36 @@ with st.sidebar:
 if preset_key:
     st.session_state.pop("preset", None)
 
+PURPOSE_MAP = {
+    "Debt Consolidation": "debt_consolidation",
+    "Credit Card":        "credit_card",
+    "Home Improvement":   "home_improvement",
+    "Major Purchase":     "major_purchase",
+    "Small Business":     "small_business",
+    "Car":                "car",
+    "Medical":            "medical",
+    "Moving":             "moving",
+    "Vacation":           "vacation",
+    "Wedding":            "wedding",
+    "Educational":        "educational",
+    "House":              "house",
+    "Renewable Energy":   "renewable_energy",
+    "Other":              "other",
+}
+HOME_MAP = {
+    "Rent":     "RENT",
+    "Mortgage": "MORTGAGE",
+    "Own":      "OWN",
+}
+
 inputs = dict(
     int_rate=float(int_rate), annual_inc=float(annual_inc), dti=float(dti),
     emp_length_int=int(emp_length), inq_last_6mths=int(inq_6mths),
     mths_since_issue_d=int(mths_issue), mths_since_earliest_cr_line=int(mths_cr),
-    acc_now_delinq=int(acc_delinq), grade=grade, home_ownership=home_own,
-    purpose=purpose, verification_status=verif, term=term,
+    acc_now_delinq=int(acc_delinq), grade=grade,
+    home_ownership=HOME_MAP[home_own],   # ← map back to raw
+    purpose=PURPOSE_MAP[purpose],         # ← map back to raw
+    verification_status=verif, term=term,
 )
 
 if run_btn:
